@@ -1,557 +1,589 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง (v2.2.1)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง</title>
 <style>
-  :root{
-    --bg:#0f172a;           /* slate-900 */
-    --panel:#0b1220;        /* darker */
-    --panel-2:#111a2e;
-    --fg:#e2e8f0;           /* slate-200 */
-    --muted:#94a3b8;        /* slate-400 */
-    --accent:#60a5fa;       /* blue-400 */
-    --accent-2:#22d3ee;     /* cyan-400 (ยังคงไว้เผื่อใช้จุดอื่น) */
-    --pink:#f472b6;         /* pink-400 */
-    --good:#34d399;         /* green-400 */
-    --warn:#f59e0b;         /* amber-500 */
-    --bad:#f87171;          /* red-400 */
-  }
-  html,body{background:var(--bg); color:var(--fg); font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji"; margin:0}
-  *{box-sizing:border-box}
-  h1{font-weight:700; font-size:clamp(20px,3.2vw,28px); margin:24px 0 12px}
-  .wrap{max-width:1100px; margin:0 auto; padding:18px}
-  .row{display:grid; gap:14px}
-  @media (min-width:900px){ .row.cols-2{grid-template-columns:1fr 1fr} }
-  .panel{background:var(--panel); border:1px solid #1e293b; border-radius:10px; padding:14px}
-  .panel-2{background:var(--panel-2)}
-  .title{font-weight:700; margin-bottom:8px}
-  .subtle{color:var(--muted)}
-  .btn{background:#1f2937; color:#e5e7eb; border:1px solid #334155; padding:8px 12px; border-radius:8px; cursor:pointer}
-  .btn:hover{background:#223049}
-  .btn.alt{background:#0ea5e9; border-color:#0284c7; color:#06233a}
-  .btn.ghost{background:transparent}
-  .grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
-  .label{font-size:14px; color:var(--muted)}
-  input[type="number"], input[type="text"]{
-    width:100%;
-    background:#0b1220; color:var(--fg); border:1px solid #1f2a42; border-radius:8px; padding:8px 10px; outline:none
-  }
-  table{width:100%; border-collapse:collapse; table-layout:fixed}
-  th,td{padding:10px 8px; border-top:1px solid #1f2a42; font-variant-numeric:tabular-nums; white-space:nowrap}
-  th{color:#a8b0bf; font-weight:600; text-align:left}
-  .mono{font-variant-numeric:tabular-nums; font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-  .note-tag{display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0a192f; background:var(--accent-2); padding:2px 8px; border-radius:999px; margin-left:8px; transform:translateY(-1px)}
-  .note-tag.big{font-size:18px; padding:3px 10px}
-  .score-card{background:linear-gradient(180deg,#0b1425,#0b1425 70%,#0a1323); border:1px solid #1e2a43; border-radius:12px; padding:14px}
-  .score-big{font-size:36px; font-weight:900}
+:root{
+  --bg:#0e1921;
+  --panel:#111d27;
+  --muted:#98a7b5;
+  --text:#e7f1fb;
+  --accent:#5cd9ff;
+  --accent-2:#f79ac0;
+  --good:#3ddc97;
+  --warn:#ffd166;
+  --bad:#ef476f;
+  --chip:#0e2b3a;
+  --chip-text:#bfeaff;
+  --card-shadow: 0 6px 20px rgba(0,0,0,.35);
+}
+*,*:before,*:after{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family: ui-sans-serif,system-ui,"Segoe UI",Inter,"Helvetica Neue",Arial;
+  line-height:1.35;
+}
+.container{
+  max-width:1100px;
+  margin:28px auto 72px;
+  padding:0 16px;
+}
+h1{
+  font-size:26px;
+  margin:0 0 12px;
+  letter-spacing:.2px;
+}
+small.ver{opacity:.7;font-size:12px;margin-left:8px}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+.card{
+  background:var(--panel);
+  border-radius:14px;
+  padding:16px;
+  box-shadow:var(--card-shadow);
+}
+/* Controls */
+.controls{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center
+}
+.btn{
+  background:#173041;
+  color:var(--text);
+  border:1px solid #1e4159;
+  padding:8px 14px;border-radius:10px;
+  font-weight:600;cursor:pointer
+}
+.btn.secondary{background:#0f2634;border-color:#173041;color:#cfe6ff}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.input, select{
+  background:#0e2837;color:var(--text);
+  border:1px solid #1a4058;border-radius:9px;
+  padding:8px 10px;min-width:84px;
+}
+label{color:#a7bccb;font-size:12px;margin-right:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.range-wrap{display:flex;align-items:center;gap:8px}
+.range{accent-color:var(--accent)}
+.badge{
+  background:var(--chip);
+  color:var(--chip-text);
+  padding:2px 8px;border-radius:999px;
+  font-weight:800;letter-spacing:.5px;
+  display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;font-size:12px;
+  border:1px solid #1f4259;
+}
 
-  /* ---- SCORE BAR (ปรับเป็น gradient pill ฟ้า→ชมพู + เงา) ---- */
-  .score-bar{
-    height:8px; border-radius:999px; background:#0f2038; position:relative; overflow:hidden;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.45);
-  }
-  .score-bar > i{
-    position:absolute; inset:0 100% 0 0; border-radius:999px;
-    background:linear-gradient(90deg, var(--accent) 0%, #86a8ff 45%, var(--pink) 100%);
-    box-shadow: 0 0 12px rgba(96,165,250,.45), 0 0 22px rgba(244,114,182,.35);
-    transition:inset 400ms cubic-bezier(.25,.8,.25,1);
-  }
+/* Tables */
+.table{width:100%;border-collapse:collapse;font-size:14px}
+.table th,.table td{padding:8px;border-bottom:1px solid #162432}
+.table th{color:#aac1d6;font-weight:700;text-align:left}
+.table td{color:#e6f5ff}
+.table .muted{color:#95a9ba}
+.sticky3{min-height:210px} /* lock height to prevent jumping */
 
-  .muted{color:var(--muted)}
-  .breakdown{font-size:13px; color:#cbd5e1}
-  @media (max-width:520px){
-    .breakdown{font-size:11px}         /* เล็กลงในมือถือ */
-    .note-tag.big{font-size:17px}
-  }
-  /* ล็อคความสูงแถวให้คงที่ (ไม่เด้ง) */
-  .fixed-rows tbody tr{height:44px}
-  /* ล็อคเสาความกว้างคงที่ ลดการขยับ */
-  .w-1{width:80px} .w-2{width:120px} .w-3{width:110px} .w-4{width:90px}
-  /* ข้อความเล็กใต้การ์ด */
-  .foot{font-size:12px; color:#93a4c4}
-  .pill{padding:3px 8px; border-radius:999px; background:#0e223d; color:#9ec3ff}
-  .row-gap{margin-top:8px}
-  .right{float:right}
+/* Top winners bubble note */
+.note-badge {
+  display:inline-block;
+  background:#0b2a3a;
+  border:1px solid #1b4258;
+  color:#bfeaff;
+  border-radius:999px;
+  padding:2px 7px;
+  font-weight:800;
+  letter-spacing:.5px;
+  margin-left:6px;
+  font-size:12px;
+  white-space:nowrap;
+}
+
+/* SCORE CARDS */
+#rl-score{margin-top:14px}
+.score-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:16px;
+}
+.score-card{
+  background:var(--panel);
+  padding:16px 16px 14px;
+  border-radius:14px;
+  box-shadow:var(--card-shadow);
+  display:flex;flex-direction:column;gap:8px;
+  min-height:180px; /* lock height/anti jump */
+}
+.score-top{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.hz-wrap{display:flex;gap:6px;align-items:baseline}
+.hz{font-size:22px;font-weight:800}
+.note{font-size:12px;opacity:.85}
+.status-chip{
+  background:#0b2a3a;border:1px solid #1b4258;
+  color:#cde9ff;padding:3px 8px;border-radius:999px;
+  font-weight:800;font-size:12px;white-space:nowrap
+}
+.bigscore{font-size:34px;font-weight:900;letter-spacing:1.2px}
+/* gradient pill bar */
+.bar{
+  position:relative;height:10px;border-radius:999px;
+  background:#0a2534;border:1px solid #16394c;overflow:hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 16px rgba(0,0,0,.25);
+}
+.bar .fill{
+  position:absolute;left:0;top:0;height:100%;
+  background:linear-gradient(90deg,#52d1ff 0%, #66c7ff 25%, #93b9ff 55%, #f79ac0 100%);
+  border-radius:999px;box-shadow:0 3px 10px rgba(245,135,185,.35);
+  width:0%;
+  transition:width .35s cubic-bezier(.2,.8,.2,1);
+}
+.score-meta{color:#b7c9d9;font-size:12px;margin-top:2px}
+.score-meta b{color:#e9f7ff}
+
+/* watchlist chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chip{
+  background:#0e2837;border:1px solid #1a4058;color:#cfe6ff;
+  padding:4px 10px;border-radius:999px;font-weight:700;font-size:12px
+}
+
+/* responsive */
+@media (max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .score-grid{grid-template-columns:1fr}
+}
+@media (max-width:520px){
+  .hz{font-size:18px}
+  .bigscore{font-size:28px}
+  .status-chip,.badge,.note-badge{font-size:11px;padding:2px 7px}
+  .score-meta{font-size:11px}
+  .table{font-size:13px}
+  .desc{font-size:13px}
+}
+/* subtle separators */
+.hr{height:1px;background:#163042;margin:10px 0 6px;opacity:.65}
+.muted{color:#a0b3c3}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง <span class="pill">v2.2.1</span></h1>
+  <div class="container">
+    <h1>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง <small class="ver">v2.2</small></h1>
 
-    <!-- Controls -->
-    <div class="panel row cols-2">
-      <div class="row">
-        <div class="title">ควบคุม</div>
-        <div class="row grid-3">
-          <button class="btn alt" id="btnStart">เริ่มวัด</button>
-          <button class="btn" id="btnStop">หยุด</button>
-          <button class="btn" id="btnClear">Clear สถิติ</button>
+    <!-- Controls and Watchlist -->
+    <div class="grid">
+      <div class="card">
+        <div class="controls">
+          <button id="startBtn" class="btn">เริ่มวัด</button>
+          <button id="stopBtn" class="btn secondary" disabled>หยุด</button>
+          <button id="clearBtn" class="btn secondary">Clear สถิติ</button>
         </div>
-
-        <div class="row-gap"></div>
-
-        <div class="grid-3">
-          <div>
-            <div class="label">ย่านตรวจ</div>
-            <div style="display:grid; grid-template-columns:1fr 20px 1fr 24px; gap:8px; align-items:center">
-              <input id="minHz" type="number" value="40" min="10" max="1000" />
-              <div class="muted">–</div>
-              <input id="maxHz" type="number" value="300" min="30" max="2000" />
-              <div class="muted">Hz</div>
-            </div>
-          </div>
-          <div>
-            <div class="label">Count Gate ≥ <span class="mono" id="gateDbLbl">-40 dBFS</span></div>
-            <input id="gateDb" type="range" min="-80" max="-12" step="1" value="-40" />
-          </div>
-          <div>
-            <div class="label">Smoothing (UI) <span class="mono" id="smoothLbl">0.20</span></div>
-            <input id="smooth" type="range" min="0.05" max="0.6" step="0.01" value="0.20">
+        <div class="hr"></div>
+        <div class="row">
+          <label>ย่านตรวจ:</label>
+          <input id="minHz" class="input" type="number" value="40" min="1" max="5000" style="width:86px"> 
+          <span class="muted">–</span>
+          <input id="maxHz" class="input" type="number" value="300" min="1" max="5000" style="width:96px">
+          <span class="muted">Hz</span>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label>Count Gate ≥</label>
+          <div class="range-wrap">
+            <input id="gate" class="range" type="range" min="-100" max="-10" value="-40" step="1" style="width:220px">
+            <span id="gateVal" class="badge">-40 dBFS</span>
           </div>
         </div>
-        <div class="subtle" style="margin-top:6px">* จะนับสถิติ Top Winner เฉพาะคลื่นที่ “พีคอันดับ 1” และมีระดับสูงกว่า Gate เท่านั้น เพื่อลดสเปค/ช่วงเงียบ</div>
+        <div class="muted" style="margin-top:10px;font-size:12px">
+          * จะนับสถิติ Top Winner เฉพาะคลิปที่ “พีคอันดับ1” และมีระดับสูงกว่า Gate เท่าที่กำหนด เพื่อคัดคนอยู่วงจรเสียงรบกวน
+        </div>
       </div>
 
-      <div class="row">
-        <div class="title">Watchlist</div>
-        <div style="display:grid; grid-template-columns:1fr 90px 140px; gap:8px">
-          <input id="watchInput" type="text" placeholder="Hz หรือ โน้ต เช่น B2" />
-          <button class="btn" id="btnWatchAdd">Add</button>
-          <button class="btn" id="btnWatchClear">Clear Watchlist</button>
+      <div class="card">
+        <div class="row">
+          <label>Watchlist</label>
+          <input id="watchInput" class="input" placeholder="Hz หรือ โน้ต เช่น B2" style="min-width:180px">
+          <button id="addWatch" class="btn">Add</button>
+          <button id="clearWatch" class="btn secondary">Clear Watchlist</button>
         </div>
-        <div id="watchList" class="muted" style="margin-top:8px">—</div>
+        <div id="watchChips" class="chips"></div>
       </div>
     </div>
 
-    <!-- Peak now -->
-    <div class="panel" style="margin-top:12px">
-      <div class="title">พีคปัจจุบัน (ล็อค 3 แถว)</div>
-      <table class="fixed-rows">
-        <thead>
-          <tr>
-            <th class="w-1">Hz</th>
-            <th class="w-2">Level (dBFS)</th>
-            <th class="w-3">Prom. (dB)</th>
-            <th class="w-4">Hold (s)</th>
-            <th class="w-3">Decay (s)</th>
-          </tr>
-        </thead>
-        <tbody id="peaksNow">
-          <tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
-          <tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
-          <tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    <!-- Current Peaks -->
+    <div class="card sticky3" style="margin-top:16px">
+      <div class="row" style="justify-content:space-between">
+        <div class="badge">พีคล่าสุด (ล็อค 3 แถว)</div>
+      </div>
+      <table class="table" style="margin-top:8px">
+        <thead><tr><th>Hz</th><th>Level (dBFS)</th><th>Prom. (dB)</th><th>Hold (s)</th><th>Decay (s)</th></tr></thead>
+        <tbody id="peaksBody">
+          <tr><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td></tr>
+          <tr><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td></tr>
+          <tr><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Top Winners -->
-    <div class="panel" style="margin-top:12px">
-      <div class="title">Top Winners (3 อันดับ)</div>
-      <table class="fixed-rows">
-        <thead>
-          <tr>
-            <th class="w-2">Hz (โน้ต)</th>
-            <th class="w-1">นับครั้ง</th>
-          </tr>
-        </thead>
-        <tbody id="winners">
-          <tr><td>—</td><td>—</td></tr>
-          <tr><td>—</td><td>—</td></tr>
-          <tr><td>—</td><td>—</td></tr>
+    <!-- Top winners -->
+    <div class="card sticky3" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between">
+        <div class="badge">Top Winners (3 อันดับ)</div>
+      </div>
+      <table class="table" style="margin-top:6px">
+        <thead><tr><th>Hz</th><th>นับครั้ง</th></tr></thead>
+        <tbody id="winnersBody">
+          <tr><td class="muted">—</td><td class="muted">—</td></tr>
+          <tr><td class="muted">—</td><td class="muted">—</td></tr>
+          <tr><td class="muted">—</td><td class="muted">—</td></tr>
         </tbody>
       </table>
-      <div class="subtle" style="margin-top:8px">* นับเมื่อ Max Peak ชนะและสูงเกิน Gate <span id="winnersInfo" class="pill right">UI update 1s</span></div>
+      <div class="muted" style="font-size:12px;margin-top:6px">* นับเมื่อ Max Peak ชนะและสูงเกิน Gate</div>
     </div>
 
-    <!-- Scores -->
-    <div class="panel" style="margin-top:12px">
-      <div class="title">Resonance Likelihood (Score)</div>
-      <div class="grid-3" id="scoreCards">
-        <!-- cards injected -->
+    <!-- Score area -->
+    <div id="rl-score">
+      <div class="badge">Resonance Likelihood (Score)</div>
+      <div class="score-grid" style="margin-top:10px">
+        <div class="score-card" data-slot="0">
+          <div class="score-top">
+            <div class="hz-wrap"><span class="hz" data-hz>—</span> <span class="note" data-note></span></div>
+            <span class="status-chip" data-status>—</span>
+          </div>
+          <div class="bigscore" data-score>—</div>
+          <div class="bar"><div class="fill" data-bar></div></div>
+          <div class="score-meta" data-meta>P:— • H:— • C:— • D:—</div>
+        </div>
+        <div class="score-card" data-slot="1">
+          <div class="score-top">
+            <div class="hz-wrap"><span class="hz" data-hz>—</span> <span class="note" data-note></span></div>
+            <span class="status-chip" data-status>—</span>
+          </div>
+          <div class="bigscore" data-score>—</div>
+          <div class="bar"><div class="fill" data-bar></div></div>
+          <div class="score-meta" data-meta>P:— • H:— • C:— • D:—</div>
+        </div>
+        <div class="score-card" data-slot="2">
+          <div class="score-top">
+            <div class="hz-wrap"><span class="hz" data-hz>—</span> <span class="note" data-note></span></div>
+            <span class="status-chip" data-status>—</span>
+          </div>
+          <div class="bigscore" data-score>—</div>
+          <div class="bar"><div class="fill" data-bar></div></div>
+          <div class="score-meta" data-meta>P:— • H:— • C:— • D:—</div>
+        </div>
       </div>
-      <div class="foot" style="margin-top:10px">
+
+      <div class="desc muted" style="margin-top:12px">
         คะแนนคิดจาก Prominence (0–12dB), Hold (0–3s), Count (เทียบกับอันดับสูงสุด), Decay (0–1.5s) — ถ่วงน้ำหนัก 30/30/20/20
-        <br/>ผลลัพธ์ขึ้นกับไมค์และสภาพแวดล้อม ใช้ร่วมกับการลองปรับ EQ/ยืนตำแหน่ง room mode
+        — ผลลัพธ์ขึ้นกับไมค์และสภาพแวดล้อม แนะนำใช้ร่วมกับการลองปรับ EQ/ยืนตำแหน่ง room mode
       </div>
     </div>
 
     <!-- Patch notes -->
-    <div class="panel panel-2" style="margin-top:12px">
-      <div class="title">บันทึกการปรับปรุง (patch notes)</div>
-      <ul class="subtle">
-        <li>v2.2.1: ปรับ Score bar เป็นแคปซูลไล่สีฟ้า→ชมพู พร้อมเงาเรือง (UI เท่านั้น)</li>
-        <li>v2.2: ทำ UI สมูธขึ้นด้วยการอัปเดตแบบ throttled (10fps) + smoothing ของค่าที่แสดง, ล็อคความสูงแถวตารางไม่ให้เด้ง, ใช้ตัวเลขแบบ tabular-nums ลดการขยับแนวนอน</li>
-        <li>v2.2: ย่อฟอนต์ breakdown บนมือถือ, ขยายฟอนต์ชื่อโน้ต, และแสดงชื่อโน้ตหลัง Hz ใน Top Winners</li>
-        <li>v2.2: นับสถิติ Top Winner เฉพาะเมื่อระดับสูงกว่า Gate และกันเด้งด้วยการ debounced ~0.4s</li>
+    <div class="card" style="margin-top:18px">
+      <div class="badge">บันทึกการปรับปรุง (patch notes)</div>
+      <ul style="margin-top:8px">
+        <li>ย่อขนาดการ์ดคะแนนให้จบในบรรทัดเดียวบนมือถือ</li>
+        <li>ป้าย “เรโซแนนซ์/น่าสงสัย/เฝ้าดูต่อ” ย่ออัตโนมัติแต่ยังอ่านชัด</li>
+        <li>แถบคะแนนเป็น gradient pill ฟ้า→ชมพู พร้อมเงา</li>
+        <li>ล็อคความสูงการ์ดและตาราง (3 แถว) ไม่ให้เด้งเมื่อไม่มีข้อมูล</li>
       </ul>
     </div>
+
   </div>
 
 <script>
-/* ========= Utilities ========= */
-const lerp = (a,b,t)=>a+(b-a)*t;
-const clamp = (v,min,max)=>Math.min(max,Math.max(min,v));
-
-function hzToNoteName(freq){
-  if(!isFinite(freq) || freq<=0) return "";
-  const A4=440;
-  const n = Math.round(12*Math.log2(freq/A4));
-  const noteNames = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-  const idx = (n+9+1200)%12; // shift so that n=0 -> A
-  const midi = 69 + n;
-  const octave = Math.floor((midi/12)-1);
-  const name = noteNames[idx];
-  return `${name}${octave}`;
+/* ========= Utility ========= */
+const A440 = 440;
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function freqToNoteName(freq){
+  if(!isFinite(freq) || freq<=0) return '';
+  const n = Math.round(12 * Math.log2(freq / A440)) + 69; // MIDI
+  const name = NOTE_NAMES[(n % 12 + 12) % 12];
+  const octave = Math.floor(n/12)-1;
+  return name + octave;
+}
+function noteToFreq(note){
+  if(!note) return null;
+  const m = note.trim().toUpperCase().match(/^([A-G])(#|B)?(\d)$/);
+  if(!m) return null;
+  let name = m[1];
+  let accidental = m[2]||'';
+  let octave = parseInt(m[3],10);
+  if(accidental==='B'){ // flat
+    const order = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    let i = order.indexOf(name);
+    i = (i-1+12)%12;
+    name = order[i][0];
+    accidental = order[i].length>1 ? '#' : '';
+  }
+  const idx = NOTE_NAMES.indexOf(name + accidental);
+  const n = idx + (octave+1)*12;
+  return 440 * Math.pow(2,(n-69)/12);
 }
 
-function fmt(n,dp=1){
-  if(n==null || !isFinite(n)) return "—";
-  return Number(n).toFixed(dp);
-}
-
-/* ========= DOM refs ========= */
-const btnStart = document.getElementById('btnStart');
-const btnStop  = document.getElementById('btnStop');
-const btnClear = document.getElementById('btnClear');
-
+/* ========= UI Elements ========= */
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const clearBtn = document.getElementById('clearBtn');
+const gateSlider = document.getElementById('gate');
+const gateVal = document.getElementById('gateVal');
 const minHz = document.getElementById('minHz');
 const maxHz = document.getElementById('maxHz');
-
-const gateDb = document.getElementById('gateDb');
-const gateDbLbl = document.getElementById('gateDbLbl');
-
-const smooth = document.getElementById('smooth');
-const smoothLbl = document.getElementById('smoothLbl');
-
-const peaksNowTbody = document.getElementById('peaksNow');
-const winnersTbody = document.getElementById('winners');
-const scoreCardsEl = document.getElementById('scoreCards');
-
+const peaksBody = document.getElementById('peaksBody');
+const winnersBody = document.getElementById('winnersBody');
 const watchInput = document.getElementById('watchInput');
-const watchListEl = document.getElementById('watchList');
-const btnWatchAdd = document.getElementById('btnWatchAdd');
-const btnWatchClear = document.getElementById('btnWatchClear');
+const addWatch = document.getElementById('addWatch');
+const clearWatch = document.getElementById('clearWatch');
+const watchChips = document.getElementById('watchChips');
 
-gateDb.addEventListener('input',()=>gateDbLbl.textContent=`${gateDb.value} dBFS`);
-smooth.addEventListener('input',()=>smoothLbl.textContent=Number(smooth.value).toFixed(2));
+gateVal.textContent = gateSlider.value + " dBFS";
+gateSlider.addEventListener('input',()=>gateVal.textContent = gateSlider.value+" dBFS");
 
-/* ========= Audio + Analyser ========= */
-let ctx, analyser, dataFreq;
-let running=false, rafId;
+/* ========= Watchlist ========= */
+let watchlist = [];
+function renderWatchlist(){
+  watchChips.innerHTML='';
+  watchlist.forEach(w =>{
+    const node = document.createElement('div');
+    node.className='chip';
+    node.textContent = isNaN(w)? w : `${w} Hz`;
+    watchChips.appendChild(node);
+  });
+}
+addWatch.onclick = ()=>{
+  const v = watchInput.value.trim();
+  if(!v) return;
+  const hz = isNaN(+v) ? noteToFreq(v) : +v;
+  watchlist.push(isNaN(+v) ? v.toUpperCase() : Math.round(hz));
+  watchInput.value='';
+  renderWatchlist();
+};
+clearWatch.onclick = ()=>{ watchlist=[]; renderWatchlist(); };
+
+/* ========= Audio & Stats ========= */
+let ctx, analyser, src, rafId;
 let sampleRate=48000;
+let fftSize = 8192;
+let freqData, timeData;
 
+const hist = new Map(); // key: rounded Hz -> stats
+// stats: {count, lastSeen, hold, level, prom, promSum, holdSum, decaySum, hits, lastLevel}
+const MAX_TRACK_AGE = 3000; // ms
+
+function ensureStat(hz){
+  const key = Math.round(hz);
+  if(!hist.has(key)){
+    hist.set(key, {count:0,lastSeen:0,hold:0,level:-120,prom:0,
+      promSum:0,holdSum:0,decaySum:0,hits:0,lastLevel:-120});
+  }
+  return hist.get(key);
+}
+
+function clearStats(){
+  hist.clear();
+  updateTables([],[]);
+  setScoreCards([]);
+}
+clearBtn.onclick = clearStats;
+
+/* ========= Start/Stop ========= */
 async function start(){
-  if(running) return;
-  const stream = await navigator.mediaDevices.getUserMedia({audio:{
-    echoCancellation:true, noiseSuppression:true, autoGainControl:false
-  }});
+  if(ctx) return;
+  const stream = await navigator.mediaDevices.getUserMedia({audio:true});
   ctx = new (window.AudioContext||window.webkitAudioContext)();
   sampleRate = ctx.sampleRate;
-  const src = ctx.createMediaStreamSource(stream);
   analyser = ctx.createAnalyser();
-  analyser.fftSize = 4096;                 // ละเอียดกำลังดี
-  analyser.smoothingTimeConstant = 0.8;    // ทำสเปกตรัมสมูธ
+  analyser.fftSize = fftSize;
+  analyser.smoothingTimeConstant = 0.88;
+  src = ctx.createMediaStreamSource(stream);
   src.connect(analyser);
-  dataFreq = new Float32Array(analyser.frequencyBinCount);
-  running=true;
-  lastUi=0;
+  freqData = new Float32Array(analyser.frequencyBinCount);
+  timeData = new Float32Array(analyser.fftSize);
+  stopBtn.disabled=false; startBtn.disabled=true;
   loop();
 }
-
-function stop(){
-  running=false;
-  if(rafId) cancelAnimationFrame(rafId);
+async function stop(){
+  if(!ctx) return;
+  cancelAnimationFrame(rafId);
+  if(src && src.mediaStream) src.mediaStream.getTracks().forEach(t=>t.stop());
+  ctx.close();
+  ctx=null; startBtn.disabled=false; stopBtn.disabled=true;
 }
+startBtn.onclick = start;
+stopBtn.onclick = stop;
 
-btnStart.onclick=start;
-btnStop.onclick=stop;
-btnClear.onclick=resetStats;
-
-/* ========= State & Stats ========= */
-const holdByHz = new Map();          // รักษาเวลาอยู่ของพีค (s)
-const decayByHz = new Map();         // เวลาชะลอลงล่าสุด (s)
-const promSmoothByHz = new Map();    // ค่า prominence ที่สมูธสำหรับ UI
-const scoreSmoothByHz = new Map();   // คะแนนที่สมูธสำหรับ UI
-const countByHz = new Map();         // นับ Top winner
-
-let lastWinnerHz=null;
-let lastWinTime=0;
-
-const watchset = new Set();
-btnWatchAdd.onclick=()=>{
-  const v = (watchInput.value||"").trim();
-  if(!v) return;
-  const f = parseNoteOrHz(v);
-  if(!f) return alert('ป้อน Hz หรือ ตัวโน้ต เช่น B2 / Bb2 / F#3');
-  watchset.add(Math.round(f));
-  renderWatchlist();
-  watchInput.value="";
-};
-btnWatchClear.onclick=()=>{watchset.clear(); renderWatchlist();};
-function renderWatchlist(){
-  if(!watchset.size){watchListEl.textContent="—"; return;}
-  const arr=[...watchset].sort((a,b)=>a-b).map(h=>`${h} (${hzToNoteName(h)})`);
-  watchListEl.textContent = arr.join(" , ");
-}
-
-/* parse note or hz */
-function parseNoteOrHz(s){
-  // 215 , 215.2
-  if(/^\d+(\.\d+)?$/.test(s)) return parseFloat(s);
-  // A#2 / Bb2 / F3
-  const m = s.toUpperCase().match(/^([A-G])([#B]?)(\d)$/);
-  if(!m) return null;
-  const name = m[1]; const acc = m[2]; const oct = parseInt(m[3],10);
-  const base = {C:0,"C#":1,DB:1,D:2,"D#":3,EB:3,E:4,F:5,"F#":6,GB:6,G:7,"G#":8,AB:8,A:9,"A#":10,BB:10,B:11};
-  const key = (name+(acc==="B"?"B":acc)).replace("♭","B").replace("♯","#");
-  const n = base[key]; if(n==null) return null;
-  const midi = (oct+1)*12 + n;
-  const hz = 440*Math.pow(2,(midi-69)/12);
-  return hz;
-}
-
-/* ========= Main Loop ========= */
-let lastUi = 0;                // throttle UI ~ 10fps
-function loop(ts=performance.now()){
-  if(!running){ return; }
-  analyser.getFloatFrequencyData(dataFreq);
-
-  const peaks = pickPeaks(dataFreq, Number(minHz.value), Number(maxHz.value));
-  updateHolds(peaks, 1/30); // คิดแบบประมาณ 30fps (สำคัญแค่ความรู้สึกต่อเนื่อง)
-
-  // ผู้ชนะรอบนี้ (debounced)
-  const top = peaks[0];
-  if(top && top.levelDb >= Number(gateDb.value)){
-    const now = performance.now();
-    const rHz = Math.round(top.hz);
-    if(lastWinnerHz!==rHz || (now-lastWinTime)>400){ // กันไวเกินไป
-      lastWinnerHz = rHz; lastWinTime = now;
-      countByHz.set(rHz, (countByHz.get(rHz)||0)+1);
-    }
-  }
-
-  // UI throttled ~10fps
-  if(ts - lastUi > 100){
-    lastUi = ts;
-    renderPeaks(peaks);
-    renderWinners();
-    renderScores();
-  }
-
+/* ========= Analysis Loop ========= */
+function loop(){
   rafId = requestAnimationFrame(loop);
-}
-
-/* ========= Peak Picking ========= */
-function pickPeaks(spectrum, min, max){
+  analyser.getFloatFrequencyData(freqData);
+  const now = performance.now();
+  const min = Math.max(1, +minHz.value || 40);
+  const max = Math.max(min+1, +maxHz.value || 300);
+  const gate = +gateSlider.value;
   const binHz = sampleRate / analyser.fftSize;
-  const minBin = Math.max(1, Math.floor(min/binHz));
-  const maxBin = Math.min(spectrum.length-2, Math.ceil(max/binHz));
-  const gate = Number(gateDb.value);
+  const minBin = Math.max(1, Math.floor(min / binHz));
+  const maxBin = Math.min(freqData.length-2, Math.floor(max / binHz));
 
-  // หา local maxima
-  const arr=[];
-  for(let i=minBin;i<=maxBin;i++){
-    const L=spectrum[i-1], C=spectrum[i], R=spectrum[i+1];
-    if(C>L && C>R){
+  // find peaks
+  const peaks = [];
+  for(let i=minBin+1;i<maxBin-1;i++){
+    const l = freqData[i-1], c=freqData[i], r=freqData[i+1];
+    if(c>l && c>r){
+      const prom = c - Math.max(l,r);
       const hz = i*binHz;
-      const levelDb = C;
-      if(levelDb < gate) continue; // เงียบ ตัดทิ้ง
-      // prominence: C - avg neighbors (±6 bins)
-      let sum=0, cnt=0;
-      for(let k=-6;k<=6;k++){
-        if(k===0) continue;
-        const v=spectrum[i+k]; if(isFinite(v)){ sum+=v; cnt++; }
-      }
-      const neigh = cnt? sum/cnt : -120;
-      const prom = Math.max(0, C - neigh);
-      arr.push({hz,levelDb,prom});
+      peaks.push({hz, level:c, prom});
     }
   }
-  // sort by level (ชนะด้วยดังสุดก่อน)
-  arr.sort((a,b)=>b.levelDb-a.levelDb);
+  // sort by level, take top 3
+  peaks.sort((a,b)=>b.level-a.level);
+  const top = peaks.slice(0,3);
+
+  // Update histogram & winners
+  if(top.length){
+    // winner
+    const winner = top[0];
+    if(winner.level >= gate){
+      const s = ensureStat(winner.hz);
+      s.count++;
+    }
+    // update per peak
+    top.forEach(p=>{
+      const s = ensureStat(p.hz);
+      const dt = s.lastSeen ? (now - s.lastSeen)/1000 : 0;
+      if(dt<0.2){ // merge within small time window
+        s.hold += dt;
+      }else{
+        s.hold = Math.min(3, s.hold + Math.min(dt,0.3));
+      }
+      // decay = previous - current if dropping, clamp
+      const drop = Math.max(0, (s.lastLevel - p.level));
+      s.decaySum += Math.min(1.5, drop/30); // coarse
+      s.prom = p.prom;
+      s.promSum += Math.max(0, Math.min(12,p.prom));
+      s.level = p.level;
+      s.lastLevel = p.level;
+      s.lastSeen = now;
+      s.hits++;
+    });
+  }
+
+  // cleanup old
+  for(const [k,s] of [...hist]){
+    if(now - s.lastSeen > MAX_TRACK_AGE) hist.delete(k);
+  }
+
+  // derive current 3 peaks rows
+  const curRows = top.map(p=>{
+    return {
+      hz: Math.round(p.hz),
+      level: p.level.toFixed(1),
+      prom: p.prom.toFixed(1),
+      hold: ensureStat(p.hz).hold.toFixed(2),
+      decay: ensureStat(p.hz).decaySum.toFixed(2)
+    };
+  });
+  updateTables(curRows, getTopWinners());
+
+  // compute scores
+  const scores = computeScores();
+  setScoreCards(scores.slice(0,3));
+}
+
+function getTopWinners(){
+  const arr = [...hist.entries()].map(([hz,s])=>({hz, count:s.count}));
+  arr.sort((a,b)=>b.count-a.count);
   return arr.slice(0,3);
 }
 
-/* ========= Hold / Decay ========= */
-function updateHolds(peaks, dt){
-  // ลด hold ทุกความถี่เล็กน้อย หากไม่พบในเฟรมนี้
-  const seen = new Set();
-  for(const p of peaks){
-    const k = Math.round(p.hz);
-    const hold = (holdByHz.get(k)||0) + dt;
-    holdByHz.set(k, clamp(hold,0, 5));
-    seen.add(k);
-  }
-  // decay: ถ้าไม่เห็น ลด hold ลง = decay เพิ่ม
-  for(const [k,v] of holdByHz){
-    if(!seen.has(k)){
-      const newV = Math.max(0, v - dt);
-      holdByHz.set(k, newV);
-      const de = (decayByHz.get(k)||0) + dt;
-      decayByHz.set(k, clamp(de, 0, 5));
-    }else{
-      decayByHz.set(k, 0);
-    }
-  }
-}
-
-/* ========= Rendering ========= */
-function renderPeaks(peaks){
-  const rows = peaksNowTbody.querySelectorAll('tr');
-  const alpha = Number(smooth.value); // smoothing สำหรับตัวเลข
-
-  for(let r=0;r<3;r++){
-    const row = rows[r];
-    const p = peaks[r];
-    if(!p){
-      row.children[0].textContent = '—';
-      row.children[1].textContent = '—';
-      row.children[2].textContent = '—';
-      row.children[3].textContent = '—';
-      row.children[4].textContent = '—';
-      continue;
-    }
-    const hz = Math.round(p.hz);
-    const k = hz;
-    // สมูธ prominence UI
-    const prevProm = promSmoothByHz.get(k) ?? p.prom;
-    const smProm = lerp(prevProm, p.prom, alpha);
-    promSmoothByHz.set(k, smProm);
-
-    row.children[0].innerHTML = `${hz} <span class="note-tag">${hzToNoteName(hz)}</span>`;
-    row.children[1].textContent = fmt(p.levelDb,1);
-    row.children[2].textContent = fmt(smProm,1);
-    row.children[3].textContent = fmt(holdByHz.get(k)||0,2);
-    row.children[4].textContent = fmt(decayByHz.get(k)||0,2);
-  }
-}
-
-function renderWinners(){
-  // top 3 by count
-  const arr=[...countByHz.entries()].map(([h,c])=>({hz:h,count:c}));
-  arr.sort((a,b)=>b.count-a.count);
-  const rows = winnersTbody.querySelectorAll('tr');
+function updateTables(rows, winners){
+  // peaks rows (always 3 rows, keep layout fixed)
+  const out = [];
   for(let i=0;i<3;i++){
-    const tr = rows[i];
-    const item = arr[i];
-    if(!item){
-      tr.children[0].textContent = '—';
-      tr.children[1].textContent = '—';
-      continue;
+    const r = rows[i];
+    if(r){
+      out.push(`<tr>
+        <td>${r.hz} <span class="note-badge">${freqToNoteName(r.hz)}</span></td>
+        <td>${r.level}</td>
+        <td>${r.prom}</td>
+        <td>${r.hold}</td>
+        <td>${r.decay}</td>
+      </tr>`);
+    }else{
+      out.push(`<tr><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td></tr>`);
     }
-    tr.children[0].innerHTML = `${item.hz} <span class="note-tag">${hzToNoteName(item.hz)}</span>`;
-    tr.children[1].textContent = item.count;
   }
-}
+  peaksBody.innerHTML = out.join('');
 
-// การ์ดคะแนน (แสดง 3 อันดับจากคลื่นเดี๋ยวนี้ + counter)
-function renderScores(){
-  // สร้างรายการผู้ท้าชิงจากรอบนี้ + ที่มีนับ
-  const candidates = new Map();
-  for(const [h,c] of countByHz) candidates.set(h,{hz:h,count:c});
-  // บวก peak ปัจจุบันเข้าไป
-  const latest = pickPeaks(dataFreq, Number(minHz.value), Number(maxHz.value));
-  latest.forEach(p=>{
-    const r = Math.round(p.hz);
-    if(!candidates.has(r)) candidates.set(r,{hz:r,count:0});
-  });
-
-  // คิดคะแนน
-  let maxCnt=1;
-  for(const v of candidates.values()) maxCnt=Math.max(maxCnt, v.count);
-
-  const list=[];
-  for(const v of candidates.values()){
-    const h=v.hz;
-    const prom = clamp((promSmoothByHz.get(h)||0)/12, 0,1);
-    const hold = clamp((holdByHz.get(h)||0)/3, 0,1);
-    const cnt  = clamp(v.count/maxCnt, 0,1);
-    // decay ยิ่งสั้นยิ่งดี -> map 0..1.5s to 1..0
-    const deRaw = clamp((decayByHz.get(h)||0)/1.5, 0,1);
-    const de = 1 - deRaw;
-
-    // watchlist boost (เล็กน้อย)
-    const watchBoost = watchset.has(h) ? 0.08 : 0;
-
-    const score = clamp( (prom*0.30 + hold*0.30 + cnt*0.20 + de*0.20) + watchBoost , 0, 1 );
-    const prev = scoreSmoothByHz.get(h) ?? score;
-    const sm = lerp(prev, score, Number(smooth.value));
-    scoreSmoothByHz.set(h, sm);
-
-    list.push({hz:h, score:sm, p:prom, h:hold, c:cnt, d:(1-de)});
-  }
-
-  list.sort((a,b)=>b.score-a.score);
-  const top3 = list.slice(0,3);
-
-  // สร้าง DOM การ์ด (คงโครงให้คงที่)
-  if(!scoreCardsEl.dataset.ready){
-    for(let i=0;i<3;i++){
-      scoreCardsEl.appendChild(scoreCardTpl());
+  // winners rows (always 3)
+  const wout = [];
+  for(let i=0;i<3;i++){
+    const w = winners[i];
+    if(w){
+      wout.push(`<tr><td>${w.hz} <span class="note-badge">${freqToNoteName(w.hz)}</span></td><td>${w.count}</td></tr>`);
+    }else{
+      wout.push(`<tr><td class="muted">—</td><td class="muted">—</td></tr>`);
     }
-    scoreCardsEl.dataset.ready="1";
   }
-  const cards = scoreCardsEl.querySelectorAll('.score-card');
+  winnersBody.innerHTML = wout.join('');
+}
 
-  top3.forEach((it,idx)=>{
-    const card = cards[idx];
-    const note = hzToNoteName(it.hz);
-    card.querySelector('.hz').innerHTML = `${it.hz} Hz <span class="note-tag big">(${note})</span>`;
-    card.querySelector('.score-val').textContent = fmt(it.score*100,1);
-    const bar = card.querySelector('.score-bar > i');
-    bar.style.inset = `0 ${100-Math.round(it.score*100)}% 0 0`;
-    const bd = card.querySelector('.breakdown');
-    bd.textContent = `P:${fmt(it.p*100,0)}% · H:${fmt(it.h*100,0)}% · C:${fmt(it.c*100,0)}% · D:${fmt(it.d*100,0)}%`;
-    const tag = card.querySelector('.title-tag');
-    tag.textContent = labelFromScore(it.score);
-  });
+/* ========= Score Model ========= */
+function computeScores(){
+  // convert hist to scores
+  const items = [];
+  const gate = +gateSlider.value;
+  const maxCount = Math.max(1, ...[...hist.values()].map(s=>s.count));
+  for(const [hz,s] of hist){
+    // ignore very low-level bins never above gate
+    if(s.level < gate && s.count==0 && s.promSum===0) continue;
+    const P = Math.min(100, (s.promSum / Math.max(1,s.hits)) / 12 * 100); // avg prom->%
+    const H = Math.min(100, (s.holdSum? s.holdSum : s.hold) / 3 * 100);
+    const C = Math.min(100, s.count / maxCount * 100);
+    const D = Math.min(100, (s.decaySum / 1.5) * 100);
 
-  // ถ้าไม่ครบ 3 เติมการ์ดว่าง
-  for(let i=top3.length;i<3;i++){
-    const card = cards[i];
-    card.querySelector('.hz').innerHTML = `—`;
-    card.querySelector('.score-val').textContent = `—`;
-    card.querySelector('.score-bar > i').style.inset = `0 100% 0 0`;
-    card.querySelector('.breakdown').textContent = `—`;
-    card.querySelector('.title-tag').textContent = '';
+    const score = 0.30*P + 0.30*H + 0.20*C + 0.20*D;
+    items.push({
+      hz, score,
+      P:Math.round(P), H:Math.round(H), C:Math.round(C), D:Math.round(D)
+    });
+  }
+  items.sort((a,b)=>b.score-a.score);
+  return items;
+}
+
+function setScoreCards(items){
+  const cards = document.querySelectorAll('.score-card');
+  for(let i=0;i<cards.length;i++){
+    const c = cards[i];
+    const data = items[i];
+    const hzEl = c.querySelector('[data-hz]');
+    const noteEl = c.querySelector('[data-note]');
+    const statusEl = c.querySelector('[data-status]');
+    const scoreEl = c.querySelector('[data-score]');
+    const barEl = c.querySelector('[data-bar]');
+    const metaEl = c.querySelector('[data-meta]');
+    if(data){
+      hzEl.textContent = data.hz + " Hz";
+      noteEl.textContent = `(${freqToNoteName(data.hz)})`;
+      scoreEl.textContent = (Math.round(data.score*10)/10).toFixed(1);
+      barEl.style.width = Math.max(2, Math.min(100, data.score)) + '%';
+      metaEl.textContent = `P:${data.P}% • H:${data.H}% • C:${data.C}% • D:${data.D}%`;
+      // status chip
+      if(data.score>=70){statusEl.textContent='เรโซแนนซ์'; statusEl.style.color='#d6f8ff'}
+      else if(data.score>=40){statusEl.textContent='น่าสงสัย'}
+      else {statusEl.textContent='เฝ้าดูต่อ'}
+    }else{
+      hzEl.textContent='—'; noteEl.textContent=''; scoreEl.textContent='—';
+      barEl.style.width='0%'; metaEl.textContent='P:— • H:— • C:— • D:—';
+      statusEl.textContent='—';
+    }
   }
 }
-function scoreCardTpl(){
-  const d=document.createElement('div');
-  d.className='score-card';
-  d.innerHTML=`
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
-      <div class="hz mono" style="font-size:18px">—</div>
-      <div class="title-tag pill"></div>
-    </div>
-    <div class="score-big mono"><span class="score-val">—</span></div>
-    <div class="score-bar"><i></i></div>
-    <div class="breakdown" style="margin-top:6px">—</div>
-  `;
-  return d;
-}
-function labelFromScore(s){
-  if(s>=0.70) return "เรโซแนนซ์";
-  if(s>=0.45) return "น่าสงสัย";
-  return "เฝ้าดูต่อ";
-}
-
-/* ========= Clear ========= */
-function resetStats(){
-  holdByHz.clear(); decayByHz.clear(); promSmoothByHz.clear(); scoreSmoothByHz.clear(); countByHz.clear();
-  renderWinners(); renderScores();
-  // reset UI rows
-  renderPeaks([]);
-}
-
-/* ========= Kick off ========= */
-renderWatchlist();
-renderPeaks([]);
-renderWinners();
-renderScores();
-
 </script>
 </body>
 </html>
