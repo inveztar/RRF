@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Room Resonance Watch — v2.1 (Score + Gate + 3-row lock)</title>
+<title>Room Resonance Watch — v2.2 (Score + Gate + 3-row lock + NoteName)</title>
 <style>
   /* ---------------------------------------------------------
      แพทหลังบ้าน (Patch Notes)
+     - v2.2
+       • แสดงชื่อ “โน้ต” กำกับถัดจาก Hz ในการ์ด Resonance Likelihood (Score)
      - v2.1
        • ล็อคตารางผล 3 แถวตายตัว (ไม่มีการดีดแถว) ถ้าไม่มีค่าโชว์ "—"
        • เพิ่ม Count Gate (dBFS) แบบสไลด์ เพื่อกันการนับช่วงเงียบ/นอยซ์
-       • เก็บ Top Winners เฉพาะช่วงที่เสียงดังเกิน Gate และ “อันดับ 1” เท่านั้น
-       • คำนวณ Resonance Likelihood (Score) จาก Prominence, Hold, Top Count, Decay
-       • เพิ่มตัวจับ Decay (= เวลาตั้งแต่จุดพีคจนตก ≥ 10dB) แบบประมาณค่า
-       • รองรับ Watchlist (Hz หรือโน้ต เช่น B2) และแสดงไฮไลต์หากเข้าใกล้
-       • Start/Stop/ Clear สถิติได้
+       • เก็บ Top Winner เฉพาะคลิปที่ “พีคอันดับ1” และดังเกิน Gate
+       • คำนวณ Resonance Likelihood (Score) จาก Prominence, Hold, Count, Decay
+       • ประมาณค่า Decay (= เวลาตั้งแต่จุดพีคจนตก ≥ 10dB)
+       • Watchlist (Hz หรือโน้ต เช่น B2), Start/Stop, Clear
      --------------------------------------------------------- */
 
   :root{
@@ -53,7 +54,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง <span class="badge">v2.1</span></h1>
+  <h1>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง <span class="badge">v2.2</span></h1>
 
   <div class="row">
     <div class="card" style="flex:1 1 560px;min-width:320px">
@@ -144,6 +145,15 @@
     if(acc === '#') semis += 1; else if(acc==='b') semis -= 1;
     return +(A4*Math.pow(2,semis/12)).toFixed(2);
   };
+  // แปลง Hz -> ชื่อโน้ต (ใกล้สุด)
+  const hzToNoteName = (hz) => {
+    if(!hz || hz<=0 || !isFinite(hz)) return '';
+    const midi = Math.round(69 + 12*Math.log2(hz/440));
+    const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const name = names[((midi%12)+12)%12];
+    const octave = Math.floor(midi/12) - 1;
+    return `${name}${octave}`;
+  };
   const fmt = (v,empty='—') => (v==null || Number.isNaN(v) ? empty : v);
   const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
 
@@ -154,14 +164,9 @@
   let gateDb = -40;
 
   const winners = new Map(); // freqRounded -> count
-  // สำหรับ Decay: จำค่าพีคล่าสุดแต่ละความถี่
-  const peakMemo = new Map(); // freqRounded -> {peakDb, t0, lastDecay}
-
-  // Hold ของพีคปัจจุบัน 3 อันดับ
-  const holds = new Map(); // freqRounded -> {tStart, lastSeen}
-
-  // Watchlist
-  let watch = []; // Hz
+  const peakMemo = new Map(); // Decay memo: freqRounded -> {peakDb, t0, lastDecay}
+  const holds = new Map();    // Hold memo:  freqRounded -> {tStart, lastSeen}
+  let watch = []; // Watchlist in Hz
 
   // ====== DOM ======
   const btnStart = document.getElementById('btnStart');
@@ -255,20 +260,17 @@
     const cands=[];
     for(let i=minBin+2;i<=maxBin-2;i++){
       const v = data[i];
-      if(v<=data[i-1] || v<=data[i+1]) continue; // ต้องเป็นยอดเหนือสองข้าง
-      // prominence: ต่างจากค่าเฉลี่ยของเพื่อนบ้าน 2 ข้าง
+      if(v<=data[i-1] || v<=data[i+1]) continue;
       const neigh = (data[i-2]+data[i-1]+data[i+1]+data[i+2])/4;
       const prom = v - neigh;
       cands.push({bin:i, hz:hzOf(i), level:v, prom});
     }
-    // จัดเรียงตาม prominence มากไปน้อย
     cands.sort((a,b)=>b.prom-a.prom);
 
-    // เก็บ top3 แต่ต้องอยู่ในย่านและไม่ชนกันเกินไป (อย่างน้อย 2 bins)
     const chosen=[];
     for(const p of cands){
       if(chosen.length>=3) break;
-      if(p.prom<1.5) continue; // ขั้นต่ำเพื่อกัน noise ripple
+      if(p.prom<1.5) continue;
       if(chosen.some(q=>Math.abs(q.bin-p.bin)<2)) continue;
       // decay ประเมินจาก peakMemo
       const rHz = Math.round(p.hz);
@@ -288,14 +290,11 @@
       }
       chosen.push({...p, decay:dec});
     }
-
     return {peaks:chosen, overall};
   }
 
-  // Hold time สำหรับ peak ที่คงอยู่
   function updateHolds(peaks){
     const now = performance.now()/1000;
-    // mark seen
     const seen = new Set();
     for(const p of peaks){
       const k = Math.round(p.hz);
@@ -304,11 +303,9 @@
       if(!h){ h={tStart:now,lastSeen:now}; holds.set(k,h); }
       h.lastSeen = now;
     }
-    // clear holdsที่หายไปนาน >0.5s
     for(const [k,h] of holds){
       if(now - h.lastSeen > 0.5) holds.delete(k);
     }
-    // คำนวณ holdSec บน peaks
     for(const p of peaks){
       const k = Math.round(p.hz);
       const h = holds.get(k);
@@ -318,18 +315,16 @@
 
   // Winners count (อันดับ1 + gate)
   function updateWinners(peaks, overall){
-    if(overall < gateDb) return;         // ต่ำกว่า Gate ไม่เก็บ
+    if(overall < gateDb) return;
     if(!peaks.length) return;
-    const p = peaks[0];                  // นับเฉพาะอันดับ 1
+    const p = peaks[0];
     const key = Math.round(p.hz);
     winners.set(key,(winners.get(key)||0)+1);
   }
 
   // Score คิดจาก Prominence, Hold, Count, Decay
   function computeScores(peaks){
-    // ref
     const promRef=12, holdRef=3, decayRef=1.5;
-    // นอร์มัลไลซ์ count โดยเทียบกับ max ทั้งหมด
     let maxCount = 0;
     winners.forEach(v=>{if(v>maxCount) maxCount=v;});
     const scored = [];
@@ -347,10 +342,8 @@
         hz: fr, score, parts:{promN,holdN,cntN,decN}, src:p, count
       });
     }
-    // เติมรายการจาก winners (ที่อาจไม่ได้ขึ้น top3 ณ เฟรมนี้) เพื่อการจัดอันดับแม่นขึ้น
     for(const [fr,c] of winners){
       if(!scored.some(x=>x.hz===fr)){
-        // ลองดึง decay จาก memo
         const dec = peakMemo.get(fr)?.lastDecay ?? 0;
         const promN=0, holdN=0, decN=clamp(dec/1.5,0,1), cntN = maxCount? c/maxCount : 0;
         const score = 100*(0.30*promN + 0.30*holdN + 0.20*cntN + 0.20*decN);
@@ -406,9 +399,10 @@
       const pct = clamp(s.score,0,100).toFixed(1);
       const p = s.parts;
       const bar = `<div class="bar"><i style="width:${pct}%"></i></div>`;
+      const noteName = hzToNoteName(s.hz);
       scoresBox.innerHTML += `<div class="card" style="flex:1 1 320px;min-width:260px">
         <div class="ctl" style="justify-content:space-between"><div>
-          <div class="mono" style="font-size:18px">${s.hz} Hz</div>
+          <div class="mono" style="font-size:18px">${s.hz} Hz <span class="muted">(${noteName})</span></div>
           <div class="muted">Score</div></div>
           <div class="mono" style="font-size:22px;font-weight:800">${pct}</div>
         </div>
@@ -435,7 +429,7 @@
 
   // init
   renderPeaks([]);
-  renderWinners();
+  renderWinners([]);
   renderScores([]);
   renderWatchlist();
 })();
