@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง (v2.2)</title>
+<title>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง (v2.2.1)</title>
 <style>
   :root{
     --bg:#0f172a;           /* slate-900 */
@@ -12,7 +12,8 @@
     --fg:#e2e8f0;           /* slate-200 */
     --muted:#94a3b8;        /* slate-400 */
     --accent:#60a5fa;       /* blue-400 */
-    --accent-2:#22d3ee;     /* cyan-400 */
+    --accent-2:#22d3ee;     /* cyan-400 (ยังคงไว้เผื่อใช้จุดอื่น) */
+    --pink:#f472b6;         /* pink-400 */
     --good:#34d399;         /* green-400 */
     --warn:#f59e0b;         /* amber-500 */
     --bad:#f87171;          /* red-400 */
@@ -45,8 +46,19 @@
   .note-tag.big{font-size:18px; padding:3px 10px}
   .score-card{background:linear-gradient(180deg,#0b1425,#0b1425 70%,#0a1323); border:1px solid #1e2a43; border-radius:12px; padding:14px}
   .score-big{font-size:36px; font-weight:900}
-  .score-bar{height:8px; border-radius:999px; background:#0f2038; position:relative; overflow:hidden}
-  .score-bar > i{position:absolute; inset:0 100% 0 0; background:linear-gradient(90deg,var(--accent),var(--accent-2)); border-radius:999px; transition:inset 400ms cubic-bezier(.25,.8,.25,1)}
+
+  /* ---- SCORE BAR (ปรับเป็น gradient pill ฟ้า→ชมพู + เงา) ---- */
+  .score-bar{
+    height:8px; border-radius:999px; background:#0f2038; position:relative; overflow:hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.45);
+  }
+  .score-bar > i{
+    position:absolute; inset:0 100% 0 0; border-radius:999px;
+    background:linear-gradient(90deg, var(--accent) 0%, #86a8ff 45%, var(--pink) 100%);
+    box-shadow: 0 0 12px rgba(96,165,250,.45), 0 0 22px rgba(244,114,182,.35);
+    transition:inset 400ms cubic-bezier(.25,.8,.25,1);
+  }
+
   .muted{color:var(--muted)}
   .breakdown{font-size:13px; color:#cbd5e1}
   @media (max-width:520px){
@@ -66,7 +78,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง <span class="pill">v2.2</span></h1>
+    <h1>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง <span class="pill">v2.2.1</span></h1>
 
     <!-- Controls -->
     <div class="panel row cols-2">
@@ -169,6 +181,7 @@
     <div class="panel panel-2" style="margin-top:12px">
       <div class="title">บันทึกการปรับปรุง (patch notes)</div>
       <ul class="subtle">
+        <li>v2.2.1: ปรับ Score bar เป็นแคปซูลไล่สีฟ้า→ชมพู พร้อมเงาเรือง (UI เท่านั้น)</li>
         <li>v2.2: ทำ UI สมูธขึ้นด้วยการอัปเดตแบบ throttled (10fps) + smoothing ของค่าที่แสดง, ล็อคความสูงแถวตารางไม่ให้เด้ง, ใช้ตัวเลขแบบ tabular-nums ลดการขยับแนวนอน</li>
         <li>v2.2: ย่อฟอนต์ breakdown บนมือถือ, ขยายฟอนต์ชื่อโน้ต, และแสดงชื่อโน้ตหลัง Hz ใน Top Winners</li>
         <li>v2.2: นับสถิติ Top Winner เฉพาะเมื่อระดับสูงกว่า Gate และกันเด้งด้วยการ debounced ~0.4s</li>
