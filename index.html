@@ -1,322 +1,444 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Room Resonance Finder (Backup · Backoffice)</title>
-<meta name="color-scheme" content="dark">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Room Resonance Watch — v2.1 (Score + Gate + 3-row lock)</title>
 <style>
-:root{
-  --bg:#0e1320;--panel:#121a2a;--card:#0f1727;--border:#1f2a44;
-  --text:#e5e7eb;--muted:#9aa4b2;--accent:#69a8ff;--green:#0fd19a;--red:#ff5d6d;
-}
-*{box-sizing:border-box} html,body{height:100%}
-body{margin:0;background:linear-gradient(180deg,var(--bg),#0b1220 55%);color:var(--text);
-     font:13px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,Roboto,Arial}
-.wrap{max-width:1080px;margin:28px auto;padding:0 16px}
-h1{margin:0 0 6px;font:600 22px/1.2 ui-sans-serif}
-.sub{margin:0 0 14px;color:var(--muted)}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px}
-label{display:block;color:var(--muted);font-weight:600;margin:0 0 4px}
-input[type="number"],input[type="text"],select{
-  background:#0a1220;border:1px solid var(--border);color:var(--text);
-  border-radius:8px;padding:7px 9px;min-width:90px
-}
-input[type="range"]{width:220px}
-button{border:0;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}
-.btn{background:var(--accent);color:#061120}
-.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
-.ok{background:var(--green);color:#03170f}.danger{background:var(--red);color:#2a0507}
-.pill{background:#0a1220;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
-.grid{display:grid;gap:10px;grid-template-columns:1.1fr .9fr}
-@media (max-width:980px){.grid{grid-template-columns:1fr}}
+  /* ---------------------------------------------------------
+     แพทหลังบ้าน (Patch Notes)
+     - v2.1
+       • ล็อคตารางผล 3 แถวตายตัว (ไม่มีการดีดแถว) ถ้าไม่มีค่าโชว์ "—"
+       • เพิ่ม Count Gate (dBFS) แบบสไลด์ เพื่อกันการนับช่วงเงียบ/นอยซ์
+       • เก็บ Top Winners เฉพาะช่วงที่เสียงดังเกิน Gate และ “อันดับ 1” เท่านั้น
+       • คำนวณ Resonance Likelihood (Score) จาก Prominence, Hold, Top Count, Decay
+       • เพิ่มตัวจับ Decay (= เวลาตั้งแต่จุดพีคจนตก ≥ 10dB) แบบประมาณค่า
+       • รองรับ Watchlist (Hz หรือโน้ต เช่น B2) และแสดงไฮไลต์หากเข้าใกล้
+       • Start/Stop/ Clear สถิติได้
+     --------------------------------------------------------- */
 
-/* ตารางนิ่ง ไม่แกว่ง */
-table{width:100%;border-collapse:collapse;table-layout:fixed}
-th,td{padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-th{color:#cbd5e1;text-align:left}
-tbody tr{height:30px}               /* ล็อคความสูงแถว */
-th:nth-child(1),td:nth-child(1){width:24%}
-th:nth-child(2),td:nth-child(2){width:16%}
-th:nth-child(3),td:nth-child(3){width:12%}
-th:nth-child(4),td:nth-child(4){width:12%}
-th:nth-child(5),td:nth-child(5){width:36%}
-
-.mono{font-family:ui-monospace,Consolas,Menlo,monospace}
-.hint{color:var(--muted);font-size:12px}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.chip{display:inline-flex;gap:6px;align-items:center;background:#0a1220;border:1px solid var(--border);
-      padding:4px 8px;border-radius:9px}
-.chip button{background:transparent;border:0;color:var(--muted);cursor:pointer}
-.badge{display:inline-block;background:#0a1220;border:1px solid var(--border);
-      padding:5px 10px;border-radius:999px}
-.foot{color:var(--muted);font-size:12px;margin-top:10px}
-.note{font-size:12px;color:#9aa4b2;margin-top:6px}
+  :root{
+    --bg:#0f141a; --panel:#16202a; --ink:#cfe3ff; --muted:#89a3bd; --accent:#5fb2ff;
+    --ok:#36d399; --warn:#ff8f6b; --bad:#ff5c5c; --line:#243443;
+  }
+  html,body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;margin:0}
+  .wrap{max-width:1100px;padding:18px;margin:0 auto}
+  h1{margin:0 0 14px;font-size:22px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .card h3{margin:4px 0 10px;font-size:16px;color:var(--ink)}
+  .btn{background:var(--accent);color:#062240;border:0;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn.sub{background:#334b63;color:var(--ink);font-weight:600}
+  .ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  input[type="number"], input[type="text"], select{
+    background:#0e141b;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:8px 10px;min-width:120px
+  }
+  input[type="text"]{min-width:180px}
+  .badge{display:inline-block;background:#243242;color:#9cc0ff;border-radius:999px;padding:3px 8px;font-size:12px;margin-left:8px}
+  .muted{color:var(--muted);font-size:13px}
+  .grid{width:100%;border-collapse:collapse}
+  .grid th,.grid td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+  .grid th{color:#9cc0ff;font-weight:700;font-size:13px}
+  .grid td{font-size:14px}
+  .grid tr:last-child td{border-bottom:0}
+  .mono{font-variant-numeric:tabular-nums}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .bar{height:8px;background:#233141;border-radius:8px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#2ad2c9,#5fb2ff 60%,#ff8f6b);width:0%}
+  .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 10px}
+  .hl{background:#11263b;padding:2px 6px;border-radius:6px}
+  .note{font-size:12px;color:#93aac4}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Room Resonance Finder</h1>
-  <p class="sub">สแกนไมค์แบบเรียลไทม์เพื่อหาเรโซแนนซ์ของห้อง – โทน “หลังบ้าน” หน้าเดียวจบ</p>
+  <h1>Resonance Watch — หาเรโซแนนซ์จากไมค์จริง <span class="badge">v2.1</span></h1>
 
-  <div class="row" style="margin-bottom:10px">
-    <button id="start" class="ok">เริ่มวัด</button>
-    <button id="stop" class="ghost">หยุด</button>
-    <button id="freeze" class="pill">Freeze</button>
-    <button id="clear" class="pill">Clear</button>
-    <span id="status" class="badge" style="pointer-events:none">ไมค์: OFF</span>
-  </div>
+  <div class="row">
+    <div class="card" style="flex:1 1 560px;min-width:320px">
+      <h3>ควบคุม</h3>
+      <div class="ctl">
+        <button id="btnStart" class="btn">เริ่มวัด</button>
+        <button id="btnStop" class="btn sub" disabled>หยุด</button>
+        <button id="btnClear" class="btn sub">Clear สถิติ</button>
 
-  <div class="grid">
-    <div class="card">
-      <div class="row">
-        <div>
-          <label>FFT Size</label>
-          <select id="fft">
-            <option>4096</option><option selected>8192</option><option>16384</option>
-          </select>
-        </div>
-        <div>
-          <label>ช่วงความถี่</label>
-          <select id="range">
-            <option value="20,300" selected>20–300 Hz</option>
-            <option value="20,500">20–500 Hz</option>
-            <option value="40,300">40–300 Hz</option>
-            <option value="20,2000">20–2k Hz</option>
-            <option value="custom">กำหนดเอง</option>
-          </select>
-          <div class="row">
-            <input id="minHz" type="number" value="20" style="width:90px">
-            <input id="maxHz" type="number" value="300" style="width:90px">
-          </div>
-        </div>
-        <div>
-          <label>Prominence ≥ <span id="promV">6</span> dB</label>
-          <input id="prom" type="range" min="0" max="20" step="0.5" value="6">
-        </div>
-        <div>
-          <label>Top-N</label>
-          <select id="topN"><option>3</option><option selected>5</option><option>7</option><option>10</option></select>
-        </div>
-        <div>
-          <label>Averaging</label>
-          <select id="avg"><option value="0">None</option><option value="4">4×</option><option selected value="8">8×</option><option value="16">16×</option></select>
-        </div>
-        <div>
-          <label>Count Gate ≥ <span id="gateV">-60</span> dB</label>
-          <input id="gate" type="range" min="-120" max="0" step="1" value="-60">
-          <div class="hint">นับสถิติอันดับ 1 เฉพาะเมื่อระดับ (dB ของพีคที่ดังสุด) มากกว่าค่านี้ — กันกรณีห้องเงียบ/มีนอยซ์เบา ๆ</div>
-        </div>
+        <label class="pill">
+          ย่านตรวจ:
+          <input id="minHz" type="number" value="40" min="10" max="18000" step="1">
+          —
+          <input id="maxHz" type="number" value="300" min="20" max="20000" step="1">
+          Hz
+        </label>
+
+        <label class="pill">
+          Count Gate ≥
+          <input id="gate" type="range" min="-80" max="-10" step="1" value="-40">
+          <span id="gateVal" class="mono hl">-40 dBFS</span>
+        </label>
+      </div>
+      <div class="note" style="margin-top:8px">
+        * จะนับสถิติ Top Winner เฉพาะคลิปที่ “พีคอันดับ1” และมีระดับสูงกว่า Gate เท่านั้น เพื่อตัดนอยซ์/ช่วงเงียบ
       </div>
     </div>
 
-    <div class="card">
-      <div style="font-weight:700;margin-bottom:6px">Watchlist</div>
-      <div class="row">
-        <div>
-          <label>Hz</label>
-          <input id="hzIn" type="text" placeholder="เช่น 116.5">
-        </div>
-        <div>
-          <label>Note</label>
-          <input id="noteIn" type="text" placeholder="เช่น Bb2 / A#2">
-        </div>
-        <div style="align-self:flex-end"><button id="addHz" class="btn">Add</button></div>
-        <div style="align-self:flex-end"><button id="addNote" class="ghost">Add Note</button></div>
-        <div style="align-self:flex-end"><button id="clearWatch" class="ghost">Clear</button></div>
+    <div class="card" style="flex:1 1 420px;min-width:280px">
+      <h3>Watchlist</h3>
+      <div class="ctl">
+        <input id="wlHz" type="text" placeholder="Hz หรือ โน้ต เช่น B2" />
+        <button id="btnAddWatch" class="btn sub">Add</button>
+        <button id="btnClearWatch" class="btn sub">Clear Watchlist</button>
       </div>
-      <div class="hint">เพิ่ม Hz ตรง ๆ หรือพิมพ์โน้ต (เช่น <span class="mono">Bb2</span>) แล้วกด Add</div>
-      <div id="chips" class="chips"></div>
+      <div class="muted" id="watchlist" style="margin-top:8px">—</div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:10px">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div style="font-weight:700">พีค/เรโซแนนซ์ (ล็อค 3 แถว)</div>
-      <div id="watchInfo" class="hint">—</div>
-    </div>
-    <div style="overflow:auto">
-      <table>
-        <thead>
-          <tr><th>Hz</th><th>Level (dBFS)</th><th>Prom.</th><th>Hold(s)</th><th>PEQ แนะนำ</th></tr>
-        </thead>
-        <tbody id="rows"></tbody>
+  <div class="row" style="margin-top:12px">
+    <div class="card" style="flex:1 1 560px;min-width:320px">
+      <h3>พีคปัจจุบัน (ล็อค 3 แถว)</h3>
+      <table class="grid" id="tblPeaks">
+        <thead><tr>
+          <th>Hz</th><th>Level (dBFS)</th><th>Prom. (dB)</th><th>Hold (s)</th><th>Decay (s)</th>
+        </tr></thead>
+        <tbody></tbody>
       </table>
     </div>
-    <div class="note">Backup note: ล็อคผลลัพธ์ไว้ 3 แถวคงที่ ไม่เด้ง</div>
-  </div>
 
-  <div class="card" style="margin-top:10px">
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div style="font-weight:700">Top Winners (สถิติ “ดังสุดเป็นอันดับ 1”)</div>
-      <div class="hint">นับเมื่อ Level ≥ เกทที่ตั้งไว้เท่านั้น</div>
-    </div>
-    <div style="overflow:auto">
-      <table>
-        <thead>
-          <tr><th>Hz</th><th>Note</th><th>Count</th></tr>
-        </thead>
-        <tbody id="rowsWinners">
-          <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td></tr>
-          <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td></tr>
-          <tr><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td></tr>
-        </tbody>
+    <div class="card" style="flex:1 1 420px;min-width:280px">
+      <h3>Top Winners (3 อันดับ)</h3>
+      <table class="grid" id="tblWinners">
+        <thead><tr><th>Hz</th><th>นับครั้ง</th></tr></thead>
+        <tbody></tbody>
       </table>
+      <div class="note">* นับเมื่อ Max Peak ชนะและดังเกิน Gate</div>
     </div>
-    <div class="note">Backup note: เพิ่มตาราง Top 3 + เพิ่ม Count Gate ป้องกันนับตอนเงียบ/นอยซ์</div>
   </div>
 
-  <div class="foot">โค้ดหน้าเดียว ทำงานในเบราว์เซอร์ ใช้ไมค์ของคุณแบบ local เท่านั้น</div>
+  <div class="card" style="margin-top:12px">
+    <h3>Resonance Likelihood (Score)</h3>
+    <div id="scores" class="row"></div>
+    <div class="note" style="margin-top:8px">
+      คะแนนคิดจาก Prominence (0–12dB), Hold (0–3s), Count (เทียบอันดับสูงสุด), Decay (0–1.5s) — ถ่วงน้ำหนัก 30/30/20/20
+    </div>
+  </div>
+
+  <div class="muted" style="margin-top:12px">
+    ผลลัพธ์ขึ้นกับไมค์และสภาพแวดล้อม ใช้ร่วมกับการลองปรับ EQ/Q แคบ ๆ เพื่อยืนยัน room mode
+  </div>
 </div>
 
 <script>
-(()=>{"use strict";
-const $=s=>document.querySelector(s), rows=$("#rows"), rowsW=$("#rowsWinners"), statusEl=$("#status"), info=$("#watchInfo");
-const st={ctx:null,src:null,an:null,run:false,raf:0,sr:48000,bin:0,avgN:8,avg:null,freeze:false,hold:new Map(),watch:[],rowPool:[],winCounts:new Map(),countGate:-60};
+(() => {
+  // ====== Utilities ======
+  const noteToHz = (s) => {
+    // รับ เช่น "B2", "Bb3", "A#2"
+    const A4 = 440;
+    const re = /^([A-Ga-g])([#b]?)(-?\d+)$/;
+    const m = (s||'').toString().trim().match(re);
+    if(!m) return NaN;
+    let n = m[1].toUpperCase();
+    const acc = m[2];
+    const oct = parseInt(m[3],10);
+    const map = {C:-9,D:-7,E:-5,F:-4,G:-2,A:0,B:2};
+    let semis = map[n] + (oct-4)*12;
+    if(acc === '#') semis += 1; else if(acc==='b') semis -= 1;
+    return +(A4*Math.pow(2,semis/12)).toFixed(2);
+  };
+  const fmt = (v,empty='—') => (v==null || Number.isNaN(v) ? empty : v);
+  const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
 
-function db2lin(db){return Math.pow(10,db/20)} function lin2db(l){return 20*Math.log10(Math.max(l,1e-12))}
-const hz2note=hz=>{const m=69+12*Math.log2(hz/440),mi=Math.round(m),nm=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"][((mi%12)+12)%12],oc=Math.floor(mi/12)-1;return nm+oc}
-function note2hz(t){t=(t||"").trim().toUpperCase().replace(/♯/g,"#").replace(/♭/g,"B");const m=t.match(/^([A-G])([#B]?)(-?\d{1,2})$/);if(!m)return null;const map={C:0,D:2,E:4,F:5,G:7,A:9,B:11};let s=map[m[1]];if(m[2]=="#")s++;if(m[2]=="B")s--;const midi=(+m[3]+1)*12+s;return 440*Math.pow(2,(midi-69)/12)}
+  // ====== State ======
+  let ctx, analyser, data, raf;
+  let sampleRate = 48000, fftSize = 4096;
+  let minHz = 40, maxHz = 300;
+  let gateDb = -40;
 
-function renderWatch(){const c=$("#chips");c.innerHTML="";st.watch.sort((a,b)=>a.f-b.f).forEach((w,i)=>{const d=document.createElement("div");d.className="chip";d.innerHTML=`<span class="mono">${w.f.toFixed(2)}Hz</span> <span class="hint">(${hz2note(w.f)})</span> <button>&times;</button>`;d.querySelector("button").onclick=()=>{st.watch.splice(i,1);renderWatch()};c.appendChild(d)})}
-function addWatchHz(f){if(!isFinite(f)||f<=0)return;if(st.watch.some(w=>Math.abs(w.f-f)<.5))return;st.watch.push({f:+f});renderWatch()}
-function addWatchNote(t){const f=note2hz(t);if(f)addWatchHz(f)}
+  const winners = new Map(); // freqRounded -> count
+  // สำหรับ Decay: จำค่าพีคล่าสุดแต่ละความถี่
+  const peakMemo = new Map(); // freqRounded -> {peakDb, t0, lastDecay}
 
-async function start(){try{
-  if(st.run)return;
-  const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  st.ctx=new (window.AudioContext||window.webkitAudioContext)(); st.sr=st.ctx.sampleRate;
-  st.src=st.ctx.createMediaStreamSource(stream);
-  st.an=st.ctx.createAnalyser(); st.an.fftSize=parseInt($("#fft").value,10); st.an.smoothingTimeConstant=0;
-  st.src.connect(st.an);
-  st.bin=(st.sr/2)/st.an.frequencyBinCount; setupAvg();
-  st.run=true; statusEl.textContent=`ไมค์: ON @ ${st.sr}Hz`;
-  ensureRows(3); // fix main table 3 rows
-  loop();
-}catch(e){statusEl.textContent="ไมค์: ERROR (อนุญาตไมค์ก่อน)"; console.error(e);}}
+  // Hold ของพีคปัจจุบัน 3 อันดับ
+  const holds = new Map(); // freqRounded -> {tStart, lastSeen}
 
-function stop(){st.run=false;cancelAnimationFrame(st.raf);if(st.ctx){st.ctx.close().catch(()=>{});st.ctx=null}statusEl.textContent="ไมค์: OFF"}
-function setupAvg(){st.avgN=parseInt($("#avg").value,10)||0;st.avg=null}
-$("#fft").onchange=e=>{if(st.an){st.an.fftSize=parseInt(e.target.value,10);st.bin=(st.sr/2)/st.an.frequencyBinCount;st.avg=null}}
-$("#gate").oninput=e=>{st.countGate=parseFloat(e.target.value); document.querySelector("#gateV").textContent=e.target.value;}
+  // Watchlist
+  let watch = []; // Hz
 
-function pick(db,minHz,maxHz,promTop,topN){const n=db.length,iMin=Math.max(1,Math.floor(minHz/st.bin)),iMax=Math.min(n-2,Math.ceil(maxHz/st.bin));const out=[];for(let i=iMin;i<=iMax;i++){const v=db[i];if(!(v>db[i-1]&&v>db[i+1]))continue;let L=v,R=v,j=i;while(j>iMin&&db[j-1]<L)L=db[--j];j=i;while(j<iMax&&db[j+1]<R)R=db[++j];const base=Math.max(L,R),prom=v-base;if(prom>=promTop)out.push({i,f:i*st.bin,v,prom})}out.sort((a,b)=>b.prom-a.prom);return out.slice(0,topN)}
-function estQ(db,idx){const v=db[idx],th=v-3;let l=idx,r=idx;while(l>1&&db[l]>th)l--;while(r<db.length-2&&db[r]>th)r++;const f0=idx*st.bin,bw=Math.max((r-l)*st.bin,1e-6);return Math.max(1,Math.min(f0/bw,20))}
+  // ====== DOM ======
+  const btnStart = document.getElementById('btnStart');
+  const btnStop  = document.getElementById('btnStop');
+  const btnClear = document.getElementById('btnClear');
+  const minHzEl = document.getElementById('minHz');
+  const maxHzEl = document.getElementById('maxHz');
+  const gateEl = document.getElementById('gate');
+  const gateVal = document.getElementById('gateVal');
+  const tblPeaks = document.getElementById('tblPeaks').querySelector('tbody');
+  const tblWinners = document.getElementById('tblWinners').querySelector('tbody');
+  const scoresBox = document.getElementById('scores');
+  const wlHz = document.getElementById('wlHz');
+  const btnAddWatch = document.getElementById('btnAddWatch');
+  const btnClearWatch = document.getElementById('btnClearWatch');
+  const watchlistDiv = document.getElementById('watchlist');
 
-/* ตารางคงที่ 3 แถว */
-function ensureRows(n){
-  if(st.rowPool.length===n) return;
-  rows.innerHTML="";
-  st.rowPool=[];
-  for(let i=0;i<n;i++){
-    const tr=document.createElement("tr");
-    tr.innerHTML=
-      `<td class="mono hz">—</td>
-       <td class="mono lvl">—</td>
-       <td class="mono prm">—</td>
-       <td class="mono hld">—</td>
-       <td class="mono peq">—</td>`;
-    rows.appendChild(tr);
-    st.rowPool.push({
-      hz:tr.children[0], lvl:tr.children[1],
-      prm:tr.children[2], hld:tr.children[3], peq:tr.children[4]
-    });
+  const hzPerBin = () => sampleRate/fftSize;
+  const binOf = (hz) => Math.round(hz / hzPerBin());
+  const hzOf  = (bin) => bin * hzPerBin();
+
+  // ====== UI events ======
+  minHzEl.onchange = ()=>{minHz = +minHzEl.value||40};
+  maxHzEl.onchange = ()=>{maxHz = +maxHzEl.value||300};
+  gateEl.oninput   = ()=>{gateDb = +gateEl.value; gateVal.textContent = gateDb.toFixed(0)+' dBFS'};
+
+  btnAddWatch.onclick = ()=>{
+    const v = wlHz.value.trim();
+    if(!v) return;
+    let hz = +v;
+    if(Number.isNaN(hz)) hz = noteToHz(v);
+    if(Number.isNaN(hz) || hz<=0) return alert('ใส่เป็น Hz หรือโน้ต เช่น B2');
+    watch.push(hz);
+    renderWatchlist();
+    wlHz.value='';
+  };
+  btnClearWatch.onclick = ()=>{watch=[]; renderWatchlist()};
+
+  btnStart.onclick = start;
+  btnStop.onclick  = stop;
+  btnClear.onclick = () => {winners.clear(); peakMemo.clear(); holds.clear(); renderWinners();};
+
+  function renderWatchlist(){
+    if(!watch.length){watchlistDiv.textContent='—'; return;}
+    watchlistDiv.innerHTML = watch.map(h=>`<span class="hl mono">${h.toFixed(2)} Hz</span>`).join(' ');
   }
-}
 
-let last=performance.now();
-function loop(){if(!st.run) return; st.raf=requestAnimationFrame(loop);
-  const n=st.an.frequencyBinCount;
-  st.buf=st.buf&&st.buf.length===n?st.buf:new Float32Array(n);
-  st.an.getFloatFrequencyData(st.buf);
-  if(st.avgN>0){
-    st.avg=st.avg&&st.avg.length===n?st.avg:new Float32Array(n);
-    for(let i=0;i<n;i++){const lin=db2lin(st.buf[i]);st.avg[i]=(st.avg[i]*(st.avgN-1)+lin)/st.avgN;st.buf[i]=lin2db(st.avg[i])}
+  // ====== Audio Init ======
+  async function start(){
+    btnStart.disabled = true;
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({audio:{
+        echoCancellation:false,noiseSuppression:false,autoGainControl:false
+      }});
+      ctx = new AudioContext();
+      sampleRate = ctx.sampleRate;
+      analyser = ctx.createAnalyser();
+      analyser.fftSize = fftSize;
+      analyser.smoothingTimeConstant = 0.0;
+      analyser.minDecibels = -100;
+      analyser.maxDecibels = -20;
+      const src = ctx.createMediaStreamSource(stream);
+      src.connect(analyser);
+      data = new Float32Array(analyser.frequencyBinCount);
+      btnStop.disabled = false;
+      loop();
+    }catch(e){
+      console.error(e);
+      alert('ไม่สามารถเปิดไมค์ได้');
+      btnStart.disabled=false;
+    }
   }
-  const minHz=parseFloat($("#minHz").value)||20,
-        maxHz=parseFloat($("#maxHz").value)||300,
-        prom =parseFloat($("#prom").value)||6,
-        topN =Math.max(3, parseInt($("#topN").value,10)||5);
+  function stop(){
+    btnStop.disabled = true;
+    if(ctx) ctx.close();
+    ctx=null; cancelAnimationFrame(raf); raf=0;
+    btnStart.disabled=false;
+  }
 
-  const now=performance.now(),dt=Math.min(1,(now-last)/1000); last=now;
-  const peaks=pick(st.buf,minHz,maxHz,prom,topN);
+  // ====== Peak find + metrics ======
+  function getPeaks(){
+    analyser.getFloatFrequencyData(data);
+    const minBin = clamp(binOf(minHz),0,data.length-1);
+    const maxBin = clamp(binOf(maxHz),0,data.length-1);
 
-  // === อัปเดตตารางหลัก 3 แถว (เรียงตามความถี่เพื่ออ่านง่าย) ===
-  const disp=peaks.slice(0,3).sort((a,b)=>a.f-b.f);
-  const nh=new Map();
-  disp.forEach(p=>{const k=Math.round(p.f),t=(st.hold.get(k)||0)+dt;nh.set(k,t);p.hold=t}); st.hold=nh;
-  for(let i=0;i<st.rowPool.length;i++){
-    const r=st.rowPool[i];
-    if(i<disp.length){
-      const p=disp[i], Q=estQ(st.buf,p.i), gain=Math.max(-6,-Math.round(p.prom/1.2));
-      r.hz.innerHTML = `${p.f.toFixed(1)} <span class="hint">(${hz2note(p.f)})</span>`;
-      r.lvl.textContent= p.v.toFixed(1);
-      r.prm.textContent= p.prom.toFixed(1);
-      r.hld.textContent= (p.hold||0).toFixed(1);
-      r.peq.textContent= `${p.f.toFixed(0)}Hz · Q≈${Q.toFixed(1)} · ${gain}dB`;
-    }else{
-      r.hz.textContent="—"; r.lvl.textContent="—"; r.prm.textContent="—"; r.hld.textContent="—"; r.peq.textContent="—";
+    // วัด Overall เพื่อใช้ Gate
+    let overall = -120;
+    for(let i=minBin;i<=maxBin;i++) overall = Math.max(overall,data[i]);
+
+    // หา local maxima (แบบง่าย)
+    const cands=[];
+    for(let i=minBin+2;i<=maxBin-2;i++){
+      const v = data[i];
+      if(v<=data[i-1] || v<=data[i+1]) continue; // ต้องเป็นยอดเหนือสองข้าง
+      // prominence: ต่างจากค่าเฉลี่ยของเพื่อนบ้าน 2 ข้าง
+      const neigh = (data[i-2]+data[i-1]+data[i+1]+data[i+2])/4;
+      const prom = v - neigh;
+      cands.push({bin:i, hz:hzOf(i), level:v, prom});
+    }
+    // จัดเรียงตาม prominence มากไปน้อย
+    cands.sort((a,b)=>b.prom-a.prom);
+
+    // เก็บ top3 แต่ต้องอยู่ในย่านและไม่ชนกันเกินไป (อย่างน้อย 2 bins)
+    const chosen=[];
+    for(const p of cands){
+      if(chosen.length>=3) break;
+      if(p.prom<1.5) continue; // ขั้นต่ำเพื่อกัน noise ripple
+      if(chosen.some(q=>Math.abs(q.bin-p.bin)<2)) continue;
+      // decay ประเมินจาก peakMemo
+      const rHz = Math.round(p.hz);
+      let dec = null;
+      const memo = peakMemo.get(rHz);
+      const now = performance.now()/1000;
+      if(!memo || p.level > memo.peakDb){
+        peakMemo.set(rHz,{peakDb:p.level,t0:now,lastDecay:memo?.lastDecay ?? null});
+      }else{
+        const drop = memo.peakDb - p.level;
+        if(drop >= 10){
+          dec = now - memo.t0;
+          peakMemo.set(rHz,{peakDb:p.level,t0:now,lastDecay:dec});
+        }else{
+          dec = memo?.lastDecay ?? null;
+        }
+      }
+      chosen.push({...p, decay:dec});
+    }
+
+    return {peaks:chosen, overall};
+  }
+
+  // Hold time สำหรับ peak ที่คงอยู่
+  function updateHolds(peaks){
+    const now = performance.now()/1000;
+    // mark seen
+    const seen = new Set();
+    for(const p of peaks){
+      const k = Math.round(p.hz);
+      seen.add(k);
+      let h = holds.get(k);
+      if(!h){ h={tStart:now,lastSeen:now}; holds.set(k,h); }
+      h.lastSeen = now;
+    }
+    // clear holdsที่หายไปนาน >0.5s
+    for(const [k,h] of holds){
+      if(now - h.lastSeen > 0.5) holds.delete(k);
+    }
+    // คำนวณ holdSec บน peaks
+    for(const p of peaks){
+      const k = Math.round(p.hz);
+      const h = holds.get(k);
+      p.holdSec = h? (now - h.tStart) : 0;
     }
   }
 
-  // === นับสถิติ "ดังสุดเป็นอันดับ 1" (เฉพาะเมื่อผ่าน Count Gate) ===
-  if(peaks.length>0){
-    let maxP = peaks[0];
-    for(let i=1;i<peaks.length;i++){ if(peaks[i].v > maxP.v) maxP = peaks[i]; }
-    if(maxP.v >= st.countGate){                 // ← Gate เงื่อนไขความดัง
-      const key = Math.round(maxP.f);
-      st.winCounts.set(key, (st.winCounts.get(key)||0) + 1);
-      renderWinners();
+  // Winners count (อันดับ1 + gate)
+  function updateWinners(peaks, overall){
+    if(overall < gateDb) return;         // ต่ำกว่า Gate ไม่เก็บ
+    if(!peaks.length) return;
+    const p = peaks[0];                  // นับเฉพาะอันดับ 1
+    const key = Math.round(p.hz);
+    winners.set(key,(winners.get(key)||0)+1);
+  }
+
+  // Score คิดจาก Prominence, Hold, Count, Decay
+  function computeScores(peaks){
+    // ref
+    const promRef=12, holdRef=3, decayRef=1.5;
+    // นอร์มัลไลซ์ count โดยเทียบกับ max ทั้งหมด
+    let maxCount = 0;
+    winners.forEach(v=>{if(v>maxCount) maxCount=v;});
+    const scored = [];
+    for(const p of peaks){
+      const fr = Math.round(p.hz);
+      const count = winners.get(fr)||0;
+
+      const promN = clamp((p.prom||0)/promRef,0,1);
+      const holdN = clamp((p.holdSec||0)/holdRef,0,1);
+      const cntN  = (maxCount>0)? (count/maxCount) : 0;
+      const decN  = clamp((p.decay||0)/decayRef,0,1);
+
+      const score = 100*(0.30*promN + 0.30*holdN + 0.20*cntN + 0.20*decN);
+      scored.push({
+        hz: fr, score, parts:{promN,holdN,cntN,decN}, src:p, count
+      });
+    }
+    // เติมรายการจาก winners (ที่อาจไม่ได้ขึ้น top3 ณ เฟรมนี้) เพื่อการจัดอันดับแม่นขึ้น
+    for(const [fr,c] of winners){
+      if(!scored.some(x=>x.hz===fr)){
+        // ลองดึง decay จาก memo
+        const dec = peakMemo.get(fr)?.lastDecay ?? 0;
+        const promN=0, holdN=0, decN=clamp(dec/1.5,0,1), cntN = maxCount? c/maxCount : 0;
+        const score = 100*(0.30*promN + 0.30*holdN + 0.20*cntN + 0.20*decN);
+        scored.push({hz:fr,score,parts:{promN,holdN,cntN,decN},src:null,count:c});
+      }
+    }
+    scored.sort((a,b)=>b.score-a.score);
+    return scored.slice(0,3);
+  }
+
+  // ====== Renderers ======
+  function renderPeaks(peaks){
+    const rows=[];
+    for(let i=0;i<3;i++){
+      const p = peaks[i];
+      if(!p){
+        rows.push(`<tr><td colspan="5" class="muted">—</td></tr>`);
+        continue;
+      }
+      const highlight = watch.some(h=>Math.abs(h-p.hz)<(hzPerBin()*1.5));
+      rows.push(`<tr>
+        <td class="mono">${Math.round(p.hz)} ${highlight?'<span class="badge">watch</span>':''}</td>
+        <td class="mono">${p.level?.toFixed(1)??'—'}</td>
+        <td class="mono">${p.prom?.toFixed(1)??'—'}</td>
+        <td class="mono">${p.holdSec?.toFixed(2)??'—'}</td>
+        <td class="mono">${p.decay!=null ? p.decay.toFixed(2) : '—'}</td>
+      </tr>`);
+    }
+    tblPeaks.innerHTML = rows.join('');
+  }
+
+  function renderWinners(){
+    const arr=[...winners.entries()].map(([hz,c])=>({hz,c}));
+    arr.sort((a,b)=>b.c-a.c);
+    const rows=[];
+    for(let i=0;i<3;i++){
+      const w = arr[i];
+      if(!w){ rows.push(`<tr><td colspan="2" class="muted">—</td></tr>`); continue; }
+      rows.push(`<tr><td class="mono">${w.hz}</td><td class="mono">${w.c}</td></tr>`);
+    }
+    tblWinners.innerHTML = rows.join('');
+  }
+
+  function renderScores(list){
+    scoresBox.innerHTML = '';
+    for(let i=0;i<3;i++){
+      const s = list[i];
+      if(!s){
+        scoresBox.innerHTML += `<div class="card" style="flex:1 1 320px;min-width:260px">
+          <div class="muted">—</div></div>`;
+        continue;
+      }
+      const pct = clamp(s.score,0,100).toFixed(1);
+      const p = s.parts;
+      const bar = `<div class="bar"><i style="width:${pct}%"></i></div>`;
+      scoresBox.innerHTML += `<div class="card" style="flex:1 1 320px;min-width:260px">
+        <div class="ctl" style="justify-content:space-between"><div>
+          <div class="mono" style="font-size:18px">${s.hz} Hz</div>
+          <div class="muted">Score</div></div>
+          <div class="mono" style="font-size:22px;font-weight:800">${pct}</div>
+        </div>
+        ${bar}
+        <div class="note" style="margin-top:6px">
+          P:${Math.round(p.promN*100)}% · H:${Math.round(p.holdN*100)}% · C:${Math.round(p.cntN*100)}% · D:${Math.round(p.decN*100)}%
+        </div>
+      </div>`;
     }
   }
 
-  // Watchlist readout
-  if(st.watch.length){
-    info.textContent="Watchlist → "+st.watch.map(w=>{
-      const idx=Math.max(0,Math.min(n-1,Math.round(w.f/st.bin)));
-      return `${w.f.toFixed(1)}Hz: ${st.buf[idx].toFixed(1)} dB`;
-    }).join(" | ");
-  }else info.textContent="—";
-}
-
-function renderWinners(){
-  // หยิบ top-3 ตาม count มาก→น้อย
-  const arr=[...st.winCounts.entries()].map(([hz,count])=>({hz, count}));
-  arr.sort((a,b)=>b.count - a.count || a.hz - b.hz);
-  // เติมลง 3 แถวคงที่
-  const rows = rowsW.querySelectorAll("tr");
-  for(let i=0;i<3;i++){
-    const tds = rows[i].children;
-    if(i<arr.length){
-      const it = arr[i];
-      tds[0].textContent = `${it.hz} Hz`;
-      tds[1].textContent = hz2note(it.hz);
-      tds[2].textContent = it.count.toString();
-    }else{
-      tds[0].textContent = "—";
-      tds[1].textContent = "—";
-      tds[2].textContent = "—";
-    }
+  // ====== Main loop ======
+  function loop(){
+    if(!ctx) return;
+    const {peaks,overall} = getPeaks();
+    updateHolds(peaks);
+    updateWinners(peaks, overall);
+    renderPeaks(peaks);
+    renderWinners();
+    const topScores = computeScores(peaks);
+    renderScores(topScores);
+    raf = requestAnimationFrame(loop);
   }
-}
 
-/* UI handlers */
-document.querySelector("#start").onclick=start; document.querySelector("#stop").onclick=stop;
-document.querySelector("#avg").onchange=setupAvg;
-document.querySelector("#prom").oninput=e=>document.querySelector("#promV").textContent=e.target.value;
-document.querySelector("#range").onchange=e=>{const v=e.target.value;if(v==="custom")return;const[a,b]=v.split(",").map(Number);document.querySelector("#minHz").value=a;document.querySelector("#maxHz").value=b}
-document.querySelector("#freeze").onclick=()=>{st.freeze=!st.freeze;document.querySelector("#freeze").textContent=st.freeze?"Unfreeze":"Freeze"}
-document.querySelector("#clear").onclick=()=>{
-  st.hold.clear(); st.winCounts.clear(); renderWinners();
-  for(const r of st.rowPool){r.hz.textContent=r.lvl.textContent=r.prm.textContent=r.hld.textContent=r.peq.textContent="—"}
-}
-document.querySelector("#addHz").onclick=()=>{const f=parseFloat(document.querySelector("#hzIn").value);if(isFinite(f))addWatchHz(f);document.querySelector("#hzIn").value=""}
-document.querySelector("#addNote").onclick=()=>{addWatchNote(document.querySelector("#noteIn").value);document.querySelector("#noteIn").value=""}
-document.querySelector("#clearWatch").onclick=()=>{st.watch=[];renderWatch()}
-
-/* anchors เริ่มต้น */
-addWatchHz(116.54);addWatchHz(233.08);addWatchHz(349.62);
-})();</script>
+  // init
+  renderPeaks([]);
+  renderWinners();
+  renderScores([]);
+  renderWatchlist();
+})();
+</script>
 </body>
 </html>
